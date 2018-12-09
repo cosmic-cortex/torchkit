@@ -4,6 +4,13 @@ import torch.nn.functional as F
 from torch.autograd import Variable
 
 
+def pad_to_shape(this, shp):
+    """
+    Not a very safe function.
+    """
+    return F.pad(this, (0, shp[3] - this.shape[3], 0, shp[2] - this.shape[2]))
+
+
 class First(nn.Module):
     def __init__(self, in_channels, middle_channels, out_channels, dropout=False):
         super(First, self).__init__()
@@ -150,13 +157,6 @@ class UNet(nn.Module):
         x_dec_2 = self.decoder_2(torch.cat([pad_to_shape(x_dec_3, x_enc_2.shape), x_enc_2], dim=1))
         x_dec_1 = self.decoder_1(torch.cat([pad_to_shape(x_dec_2, x_enc_1.shape), x_enc_1], dim=1))
         return self.last(torch.cat([pad_to_shape(x_dec_1, x_first.shape), x_first], dim=1))
-
-
-def pad_to_shape(this, shp):
-    """
-    Not a very safe function.
-    """
-    return F.pad(this, (0, shp[3] - this.shape[3], 0, shp[2] - this.shape[2]))
 
 
 if __name__ == '__main__':

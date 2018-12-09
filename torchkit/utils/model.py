@@ -6,6 +6,8 @@ import torch.nn as nn
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
+from skimage import io
+
 from torchkit.utils.misc import chk_mkdir
 
 
@@ -70,7 +72,7 @@ class Model:
                 epoch_running_loss += training_loss.item()
 
                 if verbose:
-                    print('(Epoch no. %d, batch no. %d) loss: %f' % (epoch_idx, batch_idx + 1, training_loss.item()))
+                    print('(Epoch no. %d, batch no. %d) loss: %f' % (epoch_idx + 1, batch_idx + 1, training_loss.item()))
 
             total_running_loss += epoch_running_loss/(batch_idx + 1)
             if verbose:

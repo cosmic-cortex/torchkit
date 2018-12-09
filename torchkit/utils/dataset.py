@@ -8,16 +8,14 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms as T
 from torchvision.transforms import functional as F
 
+from typing import Callable
+
 
 def to_long_tensor(pic):
     # handle numpy array
     img = torch.from_numpy(np.array(pic, np.uint8))
     # backward compatibility
     return img.long()
-
-
-def joint_to_long_tensor(image, mask):
-    return to_long_tensor(image), to_long_tensor(mask)
 
 
 def make_joint_transform(
@@ -70,77 +68,77 @@ def make_joint_transform(
     return joint_transform
 
 
-class ReadTrainDataset(Dataset):
+class ImageToImage(Dataset):
     """
     Structure of the dataset should be:
 
     dataset_path
-      |--images
-          |--img001.png
-          |--img002.png
-      |--masks
-          |--img001.png
-          |--img002.png
+      |-- input
+          |-- img001.png
+          |-- img002.png
+          |-- ...
+      |-- output
+          |-- img001.png
+          |-- img002.png
+          |-- ...
 
     """
 
-    def __init__(self, dataset_path, transform=None, one_hot_mask=False):
+    def __init__(self, dataset_path: str, joint_transform: Callable = None, one_hot_mask: int = False) -> None:
         self.dataset_path = dataset_path
-        self.images_path = os.path.join(dataset_path, 'images')
-        self.masks_path = os.path.join(dataset_path, 'masks')
-        self.images_list = os.listdir(self.images_path)
+        self.input_path = os.path.join(dataset_path, 'input')
+        self.output_path = os.path.join(dataset_path, 'output')
+        self.images_list = os.listdir(self.input_path)
 
-        self.transform = transform
+        self.joint_transform = joint_transform
         self.one_hot_mask = one_hot_mask
 
     def __len__(self):
-        return len(os.listdir(self.images_path))
+        return len(os.listdir(self.input_path))
 
     def __getitem__(self, idx):
         image_filename = self.images_list[idx]
-        image = io.imread(os.path.join(self.images_path, image_filename))
-        mask = io.imread(os.path.join(self.masks_path, image_filename))
-        if len(mask.shape) == 2:
-            mask = np.expand_dims(mask, axis=2)
+        img_in = io.imread(os.path.join(self.input_path, image_filename))
 
-        if self.transform:
-            image, mask = self.transform(image, mask)
+        # read output image in training mode
+        img_out = io.imread(os.path.join(self.output_path, image_filename))
+        if len(img_out.shape) == 2:
+            img_out = np.expand_dims(img_out, axis=2)
+
+        if self.joint_transform:
+            img_in, img_out = self.joint_transform(img_in, img_out)
 
         if self.one_hot_mask:
-            assert self.one_hot_mask >= 0, 'one_hot_mask must be nonnegative'
-            mask = torch.zeros((self.one_hot_mask, mask.shape[1], mask.shape[2])).scatter_(0, mask.long(), 1)
+            assert self.one_hot_mask > 0, 'one_hot_mask must be nonnegative'
+            img_out = torch.zeros((self.one_hot_mask, img_out.shape[1], img_out.shape[2])).scatter_(0, img_out.long(), 1)
 
-        return image, mask, image_filename
+        return img_in, img_out, image_filename
 
 
-class ReadTestDataset(Dataset):
+class Image(Dataset):
     """
     Structure of the dataset should be:
 
     dataset_path
-      |--images
-          |--img001.png
-          |--img002.png
-      |--masks
-          |--img001.png
-          |--img002.png
-
+      |-- input
+          |-- img001.png
+          |-- img002.png
+          |-- ...
     """
 
-    def __init__(self, dataset_path, transform=None):
+    def __init__(self, dataset_path: str, transform: Callable = None):
         self.dataset_path = dataset_path
-        self.images_path = os.path.join(dataset_path, 'images')
-        self.masks_path = os.path.join(dataset_path, 'masks')
-        self.images_list = os.listdir(self.images_path)
+        self.input_path = os.path.join(dataset_path, 'input')
+        self.images_list = os.listdir(self.input_path)
 
         self.transform = transform
 
     def __len__(self):
-        return len(os.listdir(self.images_path))
+        return len(os.listdir(self.input_path))
 
     def __getitem__(self, idx):
         image_filename = self.images_list[idx]
-        image = io.imread(os.path.join(self.images_path, image_filename))
+        image = io.imread(os.path.join(self.input_path, image_filename))
 
         if self.transform:
             image = self.transform(image)
