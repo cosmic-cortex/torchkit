@@ -8,6 +8,7 @@ from skimage import io
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
 
+from torchkit.utils.misc import chk_mkdir
 
 class Model:
     def __init__(self, net: nn.Module, loss, optimizer, checkpoint_folder: str,
@@ -78,11 +79,9 @@ class Model:
 
             total_running_loss += epoch_running_loss/(batch_idx + 1)
             print('(Epoch no. %d) loss: %f' % (epoch_idx, epoch_running_loss/(batch_idx + 1)))
-            loss_df.loc[epoch_idx, 'train'] = epoch_running_loss/(batch_idx + 1)
 
             if validation_dataset is not None:
                 validation_error = self.validate(validation_dataset, n_batch=1)
-                loss_df.loc[epoch_idx, 'validate'] = validation_error
                 if validation_error < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     print('Validation loss improved from %f to %f, model saved to %s'
@@ -103,13 +102,10 @@ class Model:
                         self.scheduler.step(epoch_running_loss / (batch_idx + 1))
 
             # saving model and logs
-            loss_df.to_csv(os.path.join(self.checkpoint_folder, 'loss.csv'))
             if epoch_idx % save_freq == 0:
                 epoch_save_path = os.path.join(self.checkpoint_folder, '%d' % epoch_idx)
                 chk_mkdir(epoch_save_path)
                 torch.save(self.net.state_dict(), os.path.join(epoch_save_path, 'model'))
-                if prediction_dataset:
-                    self.predict_large_images(prediction_dataset, epoch_save_path)
 
         self.net.train(False)
 

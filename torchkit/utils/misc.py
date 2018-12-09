@@ -2,7 +2,8 @@ import os
 
 from typing import Container
 
-def chk_mkdir(paths: Container): -> None
+
+def chk_mkdir(*paths: Container) -> None:
     """
     Creates folders if they do not exist.
     
