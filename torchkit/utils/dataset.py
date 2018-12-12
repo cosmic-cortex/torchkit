@@ -18,54 +18,50 @@ def to_long_tensor(pic):
     return img.long()
 
 
-def make_joint_transform(
-        crop=(256, 256), p_flip=0.5, color_jitter_params=(0.1, 0.1, 0.1, 0.1),
-        rotate_range=False, normalize=False, long_mask=False
-):
+class ImageToImageTransform:
+    def __init__(self, crop=(256, 256), p_flip=0.5, color_jitter_params=(0.1, 0.1, 0.1, 0.1),
+                 rotate_range=False, normalize=False, long_mask=False):
+        self.crop = crop
+        self.p_flip = p_flip
+        self.color_jitter_params = color_jitter_params
+        if color_jitter_params:
+            self.color_tf = T.ColorJitter(*color_jitter_params)
+        self.rotate_range = rotate_range
+        self.normalize = normalize
+        self.long_mask = long_mask
 
-    if color_jitter_params is not None:
-        color_tf = T.ColorJitter(*color_jitter_params)
-    else:
-        color_tf = None
-
-    if normalize:
-        tf_normalize = T.Normalize(mean=(0.5, 0.5, 0.5), std=(1, 1, 1))
-
-    def joint_transform(image, mask):
+    def __call__(self, input, output):
         # transforming to PIL image
-        image, mask = F.to_pil_image(image), F.to_pil_image(mask)
+        input, output = F.to_pil_image(input), F.to_pil_image(output)
 
         # random crop
-        if crop:
-            i, j, h, w = T.RandomCrop.get_params(image, crop)
-            image, mask = F.crop(image, i, j, h, w), F.crop(mask, i, j, h, w)
-            if np.random.rand() < p_flip:
-                image, mask = F.hflip(image), F.hflip(mask)
+        if self.crop:
+            i, j, h, w = T.RandomCrop.get_params(input, self.crop)
+            input, output = F.crop(input, i, j, h, w), F.crop(output, i, j, h, w)
+            if np.random.rand() < self.p_flip:
+                input, output = F.hflip(input), F.hflip(output)
 
-                    # color transforms || ONLY ON IMAGE
-
-        if color_tf is not None:
-            image = color_tf(image)
+        # color transforms || ONLY ON IMAGE
+        if self.color_jitter_params:
+            input = self.color_tf(input)
 
         # random rotation
-        if rotate_range:
+        if self.rotate_range:
             angle = rotate_range * (np.random.rand() - 0.5)
-            image, mask = F.rotate(image, angle), F.rotate(mask, angle)
+            input, output = F.rotate(input, angle), F.rotate(output, angle)
 
         # transforming to tensor
-        image = F.to_tensor(image)
-        if not long_mask:
-            mask = F.to_tensor(mask)
+        input = F.to_tensor(input)
+        if not self.long_mask:
+            output = F.to_tensor(output)
         else:
-            mask = to_long_tensor(mask)
+            output = to_long_tensor(output)
 
         # normalizing image
-        if normalize:
-            image = tf_normalize(image)
+        if self.normalize:
+            input = tf_normalize(input)
 
-        return image, mask
-
-    return joint_transform
+        return input, output
 
 
 class ImageToImage(Dataset):

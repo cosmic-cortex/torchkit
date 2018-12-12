@@ -5,13 +5,13 @@ import torch.optim as optim
 
 from torchkit.utils.model import Model
 from torchkit.models.unet import UNet
-from torchkit.utils.dataset import ImageToImage, Image, make_joint_transform
+from torchkit.utils.dataset import ImageToImage, Image, ImageToImageTransform
 
 # getting absolute paths of this script
 script_abs_path = os.path.split(os.path.realpath(__file__))[0]
 
 train_dataset_path = os.path.join(script_abs_path, 'data', 'segmentation')
-train_tf = make_joint_transform(crop=(256, 256), long_mask=True)
+train_tf = ImageToImageTransform(crop=(256, 256), long_mask=True)
 train_dataset = ImageToImage(train_dataset_path, joint_transform=train_tf)
 
 n_epochs = 10
