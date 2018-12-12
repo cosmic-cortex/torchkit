@@ -1,4 +1,6 @@
 scikit-image
 numpy
 pytorch
+pillow
+six
 torchvision
