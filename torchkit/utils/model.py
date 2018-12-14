@@ -48,7 +48,23 @@ class Model:
         self.net.to(device=self.device)
         self.loss.to(device=self.device)
 
-    def train_model(self, dataset, n_epochs, n_batch=1, verbose=False,
+    def fit_batch(self, X_batch, y_batch):
+        self.net.train(True)
+
+        X_batch = Variable(X_batch.to(device=self.device))
+        y_batch = Variable(y_batch.to(device=self.device))
+
+        # training
+        self.optimizer.zero_grad()
+        y_out = self.net(X_batch)
+        training_loss = self.loss(y_out, y_batch)
+        training_loss.backward()
+        self.optimizer.step()
+
+        # return the average training loss
+        return training_loss.item()/len(X_batch)
+
+    def fit_dataset(self, dataset, n_epochs, n_batch=1, verbose=False,
                     validation_dataset=None, save_freq=100):
         self.net.train(True)
 
@@ -57,29 +73,15 @@ class Model:
         for epoch_idx in range(n_epochs):
 
             epoch_running_loss = 0
-            for batch_idx, (X_batch, y_batch, name) in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=True)):
+            for X_batch, y_batch, name in DataLoader(dataset, batch_size=n_batch, shuffle=True):
+                epoch_running_loss += self.fit_batch(X_batch, y_batch)
 
-                X_batch = Variable(X_batch.to(device=self.device))
-                y_batch = Variable(y_batch.to(device=self.device))
-
-                # training
-                self.optimizer.zero_grad()
-                y_out = self.net(X_batch)
-                training_loss = self.loss(y_out, y_batch)
-                training_loss.backward()
-                self.optimizer.step()
-
-                epoch_running_loss += training_loss.item()
-
-                if verbose:
-                    print('(Epoch no. %d, batch no. %d) loss: %f' % (epoch_idx + 1, batch_idx + 1, training_loss.item()))
-
-            total_running_loss += epoch_running_loss/(batch_idx + 1)
+            total_running_loss += epoch_running_loss/n_batch
             if verbose:
-                print('(Epoch no. %d) loss: %f' % (epoch_idx +1, epoch_running_loss/(batch_idx + 1)))
+                print('(Epoch no. %d) loss: %f' % (epoch_idx + 1, epoch_running_loss/n_batch))
 
             if validation_dataset is not None:
-                validation_error = self.validate(validation_dataset, n_batch=1)
+                validation_error = self.validate_dataset(validation_dataset, n_batch=1)
                 if validation_error < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     if verbose:
@@ -91,14 +93,14 @@ class Model:
                     self.scheduler.step(validation_error)
 
             else:
-                if epoch_running_loss/(batch_idx + 1) < min_loss:
+                if epoch_running_loss/n_batch < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     print('Training loss improved from %f to %f, model saved to %s'
-                          % (min_loss, epoch_running_loss / (batch_idx + 1), self.checkpoint_folder))
-                    min_loss = epoch_running_loss / (batch_idx + 1)
+                          % (min_loss, epoch_running_loss/n_batch, self.checkpoint_folder))
+                    min_loss = epoch_running_loss/n_batch
 
                     if self.scheduler is not None:
-                        self.scheduler.step(epoch_running_loss / (batch_idx + 1))
+                        self.scheduler.step(epoch_running_loss/n_batch)
 
             # saving model and logs
             if epoch_idx % save_freq == 0:
@@ -108,11 +110,12 @@ class Model:
 
         self.net.train(False)
 
+        # deleting X_batch, y_batch to prevent memory leaks
         del X_batch, y_batch
 
         return total_running_loss/n_batch
 
-    def validate(self, dataset, n_batch=1, verbose=False):
+    def validate_dataset(self, dataset, n_batch=1, verbose=False):
         self.net.train(False)
 
         total_running_loss = 0
@@ -135,7 +138,7 @@ class Model:
 
         return total_running_loss/(batch_idx + 1)
 
-    def predict(self, dataset, export_path):
+    def predict_dataset(self, dataset, export_path):
         self.net.train(False)
         chk_mkdir(export_path)
 
@@ -144,3 +147,6 @@ class Model:
             y_out = self.net(X_batch).cpu().data.numpy()
 
             io.imsave(os.path.join(export_path, image_filename[0]), y_out[0, :, :, :].transpose((1, 2, 0)))
+
+    def predict_batch(self, X_batch, y_batch):
+        self.net.train(False)
