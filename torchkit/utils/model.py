@@ -148,5 +148,15 @@ class Model:
 
             io.imsave(os.path.join(export_path, image_filename[0]), y_out[0, :, :, :].transpose((1, 2, 0)))
 
-    def predict_batch(self, X_batch, y_batch):
+    def predict_batch(self, X_batch, y_batch, cpu=False, numpy=False):
         self.net.train(False)
+
+        X_batch = Variable(X_batch.to(device=self.device))
+        y_out = self.net(X_batch)
+
+        if numpy or cpu:
+            y_out = self.net(X_batch).cpu()
+            if numpy:
+                y_out = y_out.data.numpy()
+
+        return y_out
