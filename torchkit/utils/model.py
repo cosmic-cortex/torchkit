@@ -69,12 +69,12 @@ class Model:
         for X_batch, y_batch, name in DataLoader(dataset, batch_size=n_batch, shuffle=shuffle):
             epoch_running_loss += self.fit_batch(X_batch, y_batch)
 
-        # TODO: is this necessary:
+        # TODO: is this necessary?
         del X_batch, y_batch
 
         return epoch_running_loss/n_batch
 
-    def fit_dataset(self, dataset, n_epochs, n_batch=1, verbose=False, shuffle=False,
+    def fit_dataset(self, dataset, n_epochs, n_batch=1, shuffle=False,
                     validation_dataset=None, save_freq=100):
         self.net.train(True)
 
@@ -83,18 +83,12 @@ class Model:
         for epoch_idx in range(n_epochs):
 
             epoch_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
-
             total_running_loss += epoch_loss
-            if verbose:
-                print('(Epoch no. %d) loss: %f' % (epoch_idx + 1, epoch_loss))
 
             if validation_dataset is not None:
                 validation_error = self.validate_dataset(validation_dataset, n_batch=1)
                 if validation_error < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
-                    if verbose:
-                        print('Validation loss improved from %f to %f, model saved to %s'
-                              % (min_loss, validation_error, self.checkpoint_folder))
                     min_loss = validation_error
 
                 if self.scheduler is not None:
@@ -103,8 +97,6 @@ class Model:
             else:
                 if epoch_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
-                    print('Training loss improved from %f to %f, model saved to %s'
-                          % (min_loss, epoch_loss, self.checkpoint_folder))
                     min_loss = epoch_loss
 
                     if self.scheduler is not None:
@@ -134,9 +126,6 @@ class Model:
 
             total_running_loss += training_loss.item()
 
-        if verbose:
-            print('Validation loss: %f' % (total_running_loss / (batch_idx + 1)))
-
         self.net.train(True)
 
         del X_batch, y_batch
@@ -153,7 +142,7 @@ class Model:
 
             io.imsave(os.path.join(export_path, image_filename[0]), y_out[0, :, :, :].transpose((1, 2, 0)))
 
-    def predict_batch(self, X_batch, y_batch, cpu=False, numpy=False):
+    def predict_batch(self, X_batch, cpu=False, numpy=False):
         self.net.train(False)
 
         X_batch = Variable(X_batch.to(device=self.device))
