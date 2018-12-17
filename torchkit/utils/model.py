@@ -64,7 +64,17 @@ class Model:
         # return the average training loss
         return training_loss.item()/len(X_batch)
 
-    def fit_dataset(self, dataset, n_epochs, n_batch=1, verbose=False,
+    def fit_epoch(self, dataset, n_batch=1, shuffle=False):
+        epoch_running_loss = 0
+        for X_batch, y_batch, name in DataLoader(dataset, batch_size=n_batch, shuffle=shuffle):
+            epoch_running_loss += self.fit_batch(X_batch, y_batch)
+
+        # TODO: is this necessary:
+        del X_batch, y_batch
+
+        return epoch_running_loss/n_batch
+
+    def fit_dataset(self, dataset, n_epochs, n_batch=1, verbose=False, shuffle=False,
                     validation_dataset=None, save_freq=100):
         self.net.train(True)
 
@@ -72,13 +82,11 @@ class Model:
         total_running_loss = 0
         for epoch_idx in range(n_epochs):
 
-            epoch_running_loss = 0
-            for X_batch, y_batch, name in DataLoader(dataset, batch_size=n_batch, shuffle=True):
-                epoch_running_loss += self.fit_batch(X_batch, y_batch)
+            epoch_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
 
-            total_running_loss += epoch_running_loss/n_batch
+            total_running_loss += epoch_loss
             if verbose:
-                print('(Epoch no. %d) loss: %f' % (epoch_idx + 1, epoch_running_loss/n_batch))
+                print('(Epoch no. %d) loss: %f' % (epoch_idx + 1, epoch_loss))
 
             if validation_dataset is not None:
                 validation_error = self.validate_dataset(validation_dataset, n_batch=1)
@@ -93,14 +101,14 @@ class Model:
                     self.scheduler.step(validation_error)
 
             else:
-                if epoch_running_loss/n_batch < min_loss:
+                if epoch_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     print('Training loss improved from %f to %f, model saved to %s'
-                          % (min_loss, epoch_running_loss/n_batch, self.checkpoint_folder))
-                    min_loss = epoch_running_loss/n_batch
+                          % (min_loss, epoch_loss, self.checkpoint_folder))
+                    min_loss = epoch_loss
 
                     if self.scheduler is not None:
-                        self.scheduler.step(epoch_running_loss/n_batch)
+                        self.scheduler.step(epoch_loss)
 
             # saving model and logs
             if epoch_idx % save_freq == 0:
@@ -109,9 +117,6 @@ class Model:
                 torch.save(self.net.state_dict(), os.path.join(epoch_save_path, 'model'))
 
         self.net.train(False)
-
-        # deleting X_batch, y_batch to prevent memory leaks
-        del X_batch, y_batch
 
         return total_running_loss/n_batch
 
