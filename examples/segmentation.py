@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torchkit.utils.model import Model
-from torchkit.models.unet import UNet
-from torchkit.utils.dataset import ImageToImage, Image, ImageToImageTransform
+from torchkit.models import Model
+from torchkit.architecture.unet import UNet
+from torchkit.models.dataset import ImageToImage, Image, ImageToImageTransform
 
 # getting absolute paths of this script
 script_abs_path = os.path.split(os.path.realpath(__file__))[0]
@@ -29,5 +29,4 @@ device = torch.device('cpu')
 
 model = Model(unet, loss, optimizer, scheduler=scheduler,
              checkpoint_folder=checkpoint_folder, device=device)
-model.fit_dataset(train_dataset, n_batch=n_batch, n_epochs=n_epochs,
-                  verbose=True, save_freq=5)
+model.fit_dataset(train_dataset, n_batch=n_batch, n_epochs=n_epochs, save_freq=5)

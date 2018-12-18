@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 
 from skimage import io
 
-from torchkit.utils.misc import chk_mkdir
+from torchkit.models.misc import chk_mkdir
 
 
 class Model:
@@ -16,7 +16,7 @@ class Model:
                  scheduler: torch.optim.lr_scheduler._LRScheduler = None,
                  device: torch.device = torch.device('cpu')):
         """
-        Wrapper for PyTorch models.
+        Wrapper for PyTorch architecture.
 
         Args:
             net: PyTorch model.
