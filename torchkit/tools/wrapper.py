@@ -192,3 +192,12 @@ class GAN:
         self.g.to(device=self.device)
         self.d.to(device=self.device)
         self.d_loss.to(device=self.device)
+
+    def d_fit_batch(self, X_batch):
+        pass
+
+    def g_fit_batch(self, X_batch, y_batch):
+        pass
+
+    def fit_epoch(self, dataset, n_batch=1, shuffle=False):
+        pass
