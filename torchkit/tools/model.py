@@ -8,15 +8,17 @@ from torch.utils.data import DataLoader
 
 from skimage import io
 
-from torchkit.models.misc import chk_mkdir
+from torchkit.tools.misc import chk_mkdir
+from torchkit.tools.callback import BaseCallback
 
 
 class Model:
     def __init__(self, net: nn.Module, loss, optimizer, checkpoint_folder: str,
                  scheduler: torch.optim.lr_scheduler._LRScheduler = None,
-                 device: torch.device = torch.device('cpu')):
+                 device: torch.device = torch.device('cpu'),
+                 callback: BaseCallback = None):
         """
-        Wrapper for PyTorch architecture.
+        Wrapper for PyTorch models.
 
         Args:
             net: PyTorch model.

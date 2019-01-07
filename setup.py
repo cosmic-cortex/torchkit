@@ -7,7 +7,7 @@ setup(
     author_email='85a5187a@opayq.com',
     description='A modular active learning framework for Python3',
     license='MIT',
-    packages=['torchkit', 'torchkit.architecture', 'torchkit.models'],
+    packages=['torchkit', 'torchkit.models', 'torchkit.tools'],
     classifiers=['Development Status :: 4 - Beta'],
     install_requires=['scikit-image', 'pytorch', 'numpy', 'pillow', 'six', 'torchvision'],
 )

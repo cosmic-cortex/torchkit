@@ -3,9 +3,9 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from torchkit.models import Model
-from torchkit.architecture.unet import UNet
-from torchkit.models.dataset import ImageToImage, Image, ImageToImageTransform
+from torchkit.tools import Model
+from torchkit.models.vision.unet import UNet
+from torchkit.tools.dataset import ImageToImage, ImageToImageTransform
 
 # getting absolute paths of this script
 script_abs_path = os.path.split(os.path.realpath(__file__))[0]
