@@ -160,23 +160,4 @@ class UNet(nn.Module):
 
 
 if __name__ == '__main__':
-    print("----- component test -----")
-    first = First(4, 6, 8)
-    encoder = Encoder(8, 10, 12)
-    center = Center(12, 14, 16, 18)
-    decoder = Decoder(18, 16, 14, 12)
-    last = Last(12, 10, 8)
-
-    x = Variable(torch.ones(1, 4, 256, 256))
-    print(x.shape)
-
-    for layer in [first, encoder, center, decoder, last]:
-        x = layer(x)
-        print(layer.__class__.__name__, x.shape)
-
-    print("----- unet test -----")
-    unet = UNet(4, 2)
-    x = Variable(torch.ones(1, 4, 256, 256))
-    print(x.shape)
-    x = unet(x)
-    print(x.shape)
+    pass

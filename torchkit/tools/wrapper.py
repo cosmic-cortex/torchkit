@@ -1,4 +1,5 @@
 import os
+
 import numpy as np
 import torch
 import torch.nn as nn
@@ -168,3 +169,25 @@ class Model:
                 y_out = y_out.data.numpy()
 
         return y_out
+
+
+class GAN:
+    def __init__(self, generator: nn.Module, generator_optimizer,
+                 discriminator: nn.Module, discriminator_loss, discriminator_optimizer,
+                 checkpoint_folder: str,
+                 device: torch.device = torch.device('cpu')):
+        self.g = generator
+        self.g_opt = generator_optimizer
+
+        self.d = discriminator
+        self.d_loss = discriminator_loss
+        self.d_opt = discriminator_optimizer
+
+        self.checkpoint_folder = checkpoint_folder
+        chk_mkdir(self.checkpoint_folder)
+
+        # moving net and loss to the selected device
+        self.device = device
+        self.g.to(device=self.device)
+        self.d.to(device=self.device)
+        self.d_loss.to(device=self.device)
