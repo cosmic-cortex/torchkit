@@ -127,7 +127,7 @@ class Model:
 
         return logger
 
-    def validate_dataset(self, dataset, n_batch=1, verbose=False):
+    def validate_dataset(self, dataset, n_batch=1):
         self.net.train(False)
 
         total_running_loss = 0
