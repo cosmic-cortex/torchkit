@@ -16,7 +16,7 @@ class Model:
     def __init__(self, net: nn.Module, loss, optimizer, checkpoint_folder: str,
                  scheduler: torch.optim.lr_scheduler._LRScheduler = None,
                  device: torch.device = torch.device('cpu'),
-                 callback: BaseCallback = None):
+                 callback: BaseCallback = BaseCallback()):
         """
         Wrapper for PyTorch models.
 
@@ -42,6 +42,9 @@ class Model:
         self.loss = loss
         self.optimizer = optimizer
         self.scheduler = scheduler
+        assert isinstance(callback, BaseCallback)
+        self.callback = callback
+
         self.checkpoint_folder = checkpoint_folder
         chk_mkdir(self.checkpoint_folder)
 

@@ -6,7 +6,7 @@ Keras, so I have reimplemented them.
 """
 
 
-from collections import Container
+from collections import defaultdict
 
 
 class BaseCallback:
@@ -26,11 +26,23 @@ class BaseCallback:
         pass
 
 
+class Logger(BaseCallback):
+    def __init__(self):
+        self.logs = defaultdict(list)
+
+    def after_epoch(self, logs, *args, **kwargs):
+        for key, value in logs.items():
+            self.logs[key].append(value)
+
+    def get_logs(self):
+        return self.logs
+
+
 class CallbackList(BaseCallback):
     def __init__(self, callbacks):
-        assert isinstance(callbacks, Container), 'callbacks must be a Container'
+        assert isinstance(callbacks, list), 'callbacks must be a list of callbacks'
         assert all([isinstance(callback, BaseCallback) for callback in callbacks]), 'every element of callbacks must' \
-            'be an instance of a class inherited from BaseCallback'
+                                                                                    'be inherited from BaseCallback'
 
         self.callbacks = callbacks
 
