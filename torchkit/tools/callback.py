@@ -53,3 +53,10 @@ class CallbackList(BaseCallback):
     def after_epoch(self, *args, **kwargs):
         for callback in self.callbacks:
             callback.after_epoch()
+
+    def append(self, item):
+        assert isinstance(item, BaseCallback), 'item to be added must be inherited from BaseCallback'
+        self.callbacks.append(item)
+
+    def __add__(self, other):
+        return CallbackList(self.callbacks + other.callbacks)
