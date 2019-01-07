@@ -36,11 +36,11 @@ class Logger(BaseCallback):
             self.logs[key].append(value)
 
         if self.verbose:
-            if 'val_loss' not in logs.keys():
-                print("Epoch no. %d \t training loss = %f" % (logs['epoch'], logs['train_loss']))
+            if 'val_loss' not in self.logs.keys():
+                print("Epoch no. %d \t training loss = %f" % (self.logs['epoch'][-1], self.logs['train_loss'][-1]))
             else:
                 print("Epoch no. %d \t training loss = %f \t validation loss = %f" %
-                      (logs['epoch'], logs['train_loss'], logs['val_loss']))
+                      (self.logs['epoch'][-1], self.logs['train_loss'][-1], self.logs['val_loss'][-1]))
 
     def get_logs(self):
         return self.logs
