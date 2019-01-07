@@ -4,19 +4,18 @@ import torch
 import torch.nn as nn
 
 from torch.autograd import Variable
-from torch.utils.data import DataLoader
+from torch.utils.data import DataLoader, Dataset
 
 from skimage import io
 
 from torchkit.tools.misc import chk_mkdir
-from torchkit.tools.callback import BaseCallback
+from torchkit.tools.callback import BaseCallback, Logger
 
 
 class Model:
     def __init__(self, net: nn.Module, loss, optimizer, checkpoint_folder: str,
                  scheduler: torch.optim.lr_scheduler._LRScheduler = None,
-                 device: torch.device = torch.device('cpu'),
-                 callback: BaseCallback = BaseCallback()):
+                 device: torch.device = torch.device('cpu')):
         """
         Wrapper for PyTorch models.
 
@@ -42,8 +41,6 @@ class Model:
         self.loss = loss
         self.optimizer = optimizer
         self.scheduler = scheduler
-        assert isinstance(callback, BaseCallback)
-        self.callback = callback
 
         self.checkpoint_folder = checkpoint_folder
         chk_mkdir(self.checkpoint_folder)
@@ -79,16 +76,31 @@ class Model:
 
         return epoch_running_loss/n_batch
 
-    def fit_dataset(self, dataset, n_epochs, n_batch=1, shuffle=False,
-                    validation_dataset=None, save_freq=100):
+    def fit_dataset(self, dataset: Dataset, n_epochs: int, n_batch: int = 1, shuffle: bool = False,
+                    validation_dataset: Dataset = None, save_freq: int = 100, callback: BaseCallback = None):
+
+        # setting up callbacks
+        if callback is not None:
+            assert isinstance(callback, BaseCallback), 'callback must be inherited from ' \
+                                                       'torchkit.tools.callback.BaseCallback'
+        else:
+            callback = BaseCallback()
+
+        logger = Logger()
+
         self.net.train(True)
 
         min_loss = np.inf
-        total_running_loss = 0
-        for epoch_idx in range(n_epochs):
-
+        for epoch_idx in range(1, n_epochs+1):
+            # doing the epoch
+            callback.before_epoch()
             epoch_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
-            total_running_loss += epoch_loss
+            callback.after_epoch()
+
+            # logging the losses
+            logs = {'epoch': epoch_idx,
+                    'loss': epoch_loss}
+            logger.after_epoch(logs)
 
             if self.scheduler is not None:
                 self.scheduler.step(epoch_loss)
@@ -112,7 +124,7 @@ class Model:
 
         self.net.train(False)
 
-        return total_running_loss/n_batch
+        return logger
 
     def validate_dataset(self, dataset, n_batch=1, verbose=False):
         self.net.train(False)

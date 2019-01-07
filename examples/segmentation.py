@@ -25,8 +25,9 @@ loss = nn.CrossEntropyLoss()
 optimizer = optim.Adam(unet.parameters(), lr=1e-3)
 lr_milestones = [int(p*n_epochs) for p in [0.7, 0.9]]
 scheduler = optim.lr_scheduler.MultiStepLR(optimizer, lr_milestones)
-device = torch.device('cpu')
+device = torch.device('cuda:1')
 
 model = Model(unet, loss, optimizer, scheduler=scheduler,
              checkpoint_folder=checkpoint_folder, device=device)
-model.fit_dataset(train_dataset, n_batch=n_batch, n_epochs=n_epochs, save_freq=5)
+logger = model.fit_dataset(train_dataset, n_batch=n_batch, n_epochs=n_epochs, save_freq=5)
+print(logger.get_logs())
