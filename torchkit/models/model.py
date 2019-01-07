@@ -85,22 +85,19 @@ class Model:
             epoch_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
             total_running_loss += epoch_loss
 
+            if self.scheduler is not None:
+                self.scheduler.step(epoch_loss)
+
             if validation_dataset is not None:
                 validation_error = self.validate_dataset(validation_dataset, n_batch=1)
                 if validation_error < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     min_loss = validation_error
 
-                if self.scheduler is not None:
-                    self.scheduler.step(validation_error)
-
             else:
                 if epoch_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     min_loss = epoch_loss
-
-                    if self.scheduler is not None:
-                        self.scheduler.step(epoch_loss)
 
             # saving model and logs
             if epoch_idx % save_freq == 0:
