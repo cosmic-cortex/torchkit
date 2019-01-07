@@ -31,4 +31,4 @@ device = torch.device('cuda:1')
 model = Model(unet, loss, optimizer, scheduler=scheduler,
              checkpoint_folder=checkpoint_folder, device=device)
 logger = model.fit_dataset(train_dataset, n_batch=n_batch, n_epochs=n_epochs, save_freq=5,
-                           verbose=True)
+                           validation_dataset=train_dataset, verbose=True)

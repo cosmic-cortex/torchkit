@@ -108,10 +108,10 @@ class Model:
 
             if validation_dataset is not None:
                 val_loss = self.validate_dataset(validation_dataset, n_batch=1)
+                logs['val_loss'] = val_loss
                 if val_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
                     min_loss = val_loss
-                    logs['val_loss'] = val_loss
             else:
                 if train_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
