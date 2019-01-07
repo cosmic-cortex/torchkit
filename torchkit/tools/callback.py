@@ -27,12 +27,20 @@ class BaseCallback:
 
 
 class Logger(BaseCallback):
-    def __init__(self):
+    def __init__(self, verbose=False):
         self.logs = defaultdict(list)
+        self.verbose = verbose
 
     def after_epoch(self, logs, *args, **kwargs):
         for key, value in logs.items():
             self.logs[key].append(value)
+
+        if self.verbose:
+            if 'val_loss' not in logs.keys():
+                print("Epoch no. %d \t training loss = %f" % (logs['epoch'], logs['train_loss']))
+            else:
+                print("Epoch no. %d \t training loss = %f \t validation loss = %f" %
+                      (logs['epoch'], logs['train_loss'], logs['val_loss']))
 
     def get_logs(self):
         return self.logs

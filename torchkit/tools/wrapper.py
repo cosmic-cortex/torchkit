@@ -78,7 +78,8 @@ class Model:
         return epoch_running_loss/n_batch
 
     def fit_dataset(self, dataset: Dataset, n_epochs: int, n_batch: int = 1, shuffle: bool = False,
-                    validation_dataset: Dataset = None, save_freq: int = 100, callback: BaseCallback = None):
+                    validation_dataset: Dataset = None, save_freq: int = 100, callback: BaseCallback = None,
+                    verbose: bool = False):
 
         # setting up callbacks
         if callback is not None:
@@ -87,7 +88,7 @@ class Model:
         else:
             callback = BaseCallback()
 
-        logger = Logger()
+        logger = Logger(verbose=verbose)
 
         self.net.train(True)
 
@@ -95,28 +96,28 @@ class Model:
         for epoch_idx in range(1, n_epochs+1):
             # doing the epoch
             callback.before_epoch()
-            epoch_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
+            train_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
             callback.after_epoch()
 
             # logging the losses
             logs = {'epoch': epoch_idx,
-                    'loss': epoch_loss}
-            logger.after_epoch(logs)
+                    'train_loss': train_loss}
 
             if self.scheduler is not None:
-                self.scheduler.step(epoch_loss)
+                self.scheduler.step(train_loss)
 
             if validation_dataset is not None:
-                validation_error = self.validate_dataset(validation_dataset, n_batch=1)
-                if validation_error < min_loss:
+                val_loss = self.validate_dataset(validation_dataset, n_batch=1)
+                if val_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
-                    min_loss = validation_error
-
+                    min_loss = val_loss
+                    logs['val_loss'] = val_loss
             else:
-                if epoch_loss < min_loss:
+                if train_loss < min_loss:
                     torch.save(self.net.state_dict(), os.path.join(self.checkpoint_folder, 'model'))
-                    min_loss = epoch_loss
+                    min_loss = train_loss
 
+            logger.after_epoch(logs)
             # saving model and logs
             if epoch_idx % save_freq == 0:
                 epoch_save_path = os.path.join(self.checkpoint_folder, '%d' % epoch_idx)
