@@ -9,5 +9,5 @@ setup(
     license='MIT',
     packages=['torchkit', 'torchkit.models', 'torchkit.tools'],
     classifiers=['Development Status :: 4 - Beta'],
-    install_requires=['scikit-image', 'pytorch', 'numpy', 'pillow', 'six', 'torchvision'],
+    install_requires=['scikit-image', 'numpy', 'pillow', 'six', 'torchvision'],
 )
