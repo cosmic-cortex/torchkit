@@ -13,6 +13,7 @@ from torchkit.tools.misc import chk_mkdir
 from torchkit.tools.callback import BaseCallback, Logger
 
 
+# TODO: generalize the class to work with arbitrary model and training structures
 class Model:
     def __init__(self, net: nn.Module, loss, optimizer, checkpoint_folder: str,
                  scheduler: torch.optim.lr_scheduler._LRScheduler = None,
@@ -65,7 +66,7 @@ class Model:
         self.optimizer.step()
 
         # return the average training loss
-        return training_loss.item()/len(X_batch)
+        return training_loss.item() / len(X_batch)
 
     def fit_epoch(self, dataset, n_batch=1, shuffle=False):
         epoch_running_loss = 0
@@ -75,7 +76,7 @@ class Model:
         # TODO: is this necessary?
         del X_batch, y_batch
 
-        return epoch_running_loss/n_batch
+        return epoch_running_loss / n_batch
 
     def fit_dataset(self, dataset: Dataset, n_epochs: int, n_batch: int = 1, shuffle: bool = False,
                     validation_dataset: Dataset = None, save_freq: int = 100, callback: BaseCallback = None,
@@ -93,7 +94,7 @@ class Model:
         self.net.train(True)
 
         min_loss = np.inf
-        for epoch_idx in range(1, n_epochs+1):
+        for epoch_idx in range(1, n_epochs + 1):
             # doing the epoch
             callback.before_epoch()
             train_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
@@ -133,7 +134,6 @@ class Model:
 
         total_running_loss = 0
         for batch_idx, (X_batch, y_batch, name) in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=False)):
-
             X_batch = Variable(X_batch.to(device=self.device))
             y_batch = Variable(y_batch.to(device=self.device))
 
@@ -146,7 +146,7 @@ class Model:
 
         del X_batch, y_batch
 
-        return total_running_loss/(batch_idx + 1)
+        return total_running_loss / (batch_idx + 1)
 
     def predict_dataset(self, dataset, export_path):
         self.net.train(False)
@@ -193,6 +193,11 @@ class GAN:
         self.d.to(device=self.device)
         self.d_loss.to(device=self.device)
 
+    def save_model(self, save_path):
+        chk_mkdir(epoch_save_path)
+        torch.save(self.g.state_dict(), os.path.join(save_path, 'g'))
+        torch.save(self.d.state_dict(), os.path.join(save_path, 'd'))
+
     def d_fit_batch(self, X_batch):
         pass
 
@@ -201,3 +206,34 @@ class GAN:
 
     def fit_epoch(self, dataset, n_batch=1, shuffle=False):
         pass
+
+    def fit_dataset(self, dataset: Dataset, n_epochs: int, n_batch: int = 1, shuffle: bool = False,
+                    validation_dataset: Dataset = None, save_freq: int = 100, callback: BaseCallback = None,
+                    verbose: bool = False):
+
+        # setting up callbacks
+        if callback is not None:
+            assert isinstance(callback, BaseCallback), 'callback must be inherited from ' \
+                                                       'torchkit.tools.callback.BaseCallback'
+        else:
+            callback = BaseCallback()
+
+        logger = Logger(verbose=verbose)
+
+        self.g.train(True)
+        self.d.train(True)
+
+        for epoch_idx in range(1, n_epochs + 1):
+            callback.before_epoch()
+            train_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
+            callback.after_epoch()
+
+            # logging the losses
+            logs = {'epoch': epoch_idx,
+                    'train_loss': train_loss}
+
+            logger.after_epoch(logs)
+            # saving model and logs
+            if epoch_idx % save_freq == 0:
+                epoch_save_path = os.path.join(self.checkpoint_folder, '%d' % epoch_idx)
+                self.save_model(epoch_save_path)
