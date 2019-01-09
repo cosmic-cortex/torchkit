@@ -70,7 +70,7 @@ class Model:
 
     def fit_epoch(self, dataset, n_batch=1, shuffle=False):
         epoch_running_loss = 0
-        for X_batch, y_batch, name in DataLoader(dataset, batch_size=n_batch, shuffle=shuffle):
+        for X_batch, y_batch, *rest in DataLoader(dataset, batch_size=n_batch, shuffle=shuffle):
             epoch_running_loss += self.fit_batch(X_batch, y_batch)
 
         # TODO: is this necessary?
@@ -133,7 +133,7 @@ class Model:
         self.net.train(False)
 
         total_running_loss = 0
-        for batch_idx, (X_batch, y_batch, name) in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=False)):
+        for batch_idx, (X_batch, y_batch, *rest) in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=False)):
             X_batch = Variable(X_batch.to(device=self.device))
             y_batch = Variable(y_batch.to(device=self.device))
 
@@ -152,11 +152,16 @@ class Model:
         self.net.train(False)
         chk_mkdir(export_path)
 
-        for batch_idx, (X_batch, image_filename) in enumerate(DataLoader(dataset, batch_size=1)):
+        for batch_idx, (X_batch, *rest) in enumerate(DataLoader(dataset, batch_size=1)):
+            if isinstance(rest[0][0], str):
+                image_filename = rest[0][0]
+            else:
+                image_filename = '%s.png' % str(batch_idx + 1).zfill(3)
+
             X_batch = Variable(X_batch.to(device=self.device))
             y_out = self.net(X_batch).cpu().data.numpy()
 
-            io.imsave(os.path.join(export_path, image_filename[0]), y_out[0, :, :, :].transpose((1, 2, 0)))
+            io.imsave(os.path.join(export_path, image_filename), y_out[0, :, :, :].transpose((1, 2, 0)))
 
     def predict_batch(self, X_batch, cpu=False, numpy=False):
         self.net.train(False)

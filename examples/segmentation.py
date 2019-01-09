@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.optim as optim
 
 from torchkit.tools import Model
-from torchkit.tools.dataset import ImageToImage, ImageToImageTransform
+from torchkit.tools.dataset import Image, ImageToImage, ImageToImageTransform
 
 from torchkit.models.vision.segmentation.unet import UNet
 
@@ -14,8 +14,9 @@ script_abs_path = os.path.split(os.path.realpath(__file__))[0]
 train_dataset_path = os.path.join(script_abs_path, 'data', 'segmentation')
 train_tf = ImageToImageTransform(crop=(256, 256), long_mask=True)
 train_dataset = ImageToImage(train_dataset_path, joint_transform=train_tf)
+predict_dataset = Image(train_dataset_path)
 
-n_epochs = 10
+n_epochs = 2
 n_batch = 2
 model_name = 'UNet_example'
 checkpoint_folder = os.path.join(script_abs_path, '..', 'checkpoints', 'UNet_example')
