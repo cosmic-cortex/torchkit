@@ -98,6 +98,7 @@ class ImageToImage(Dataset):
 
         # read output image in training mode
         img_out = io.imread(os.path.join(self.output_path, image_filename))
+        # TODO: rewrite this such that adding dimensions is optional
         if len(img_out.shape) == 2:
             img_out = np.expand_dims(img_out, axis=2)
 
@@ -147,10 +148,40 @@ class Image(Dataset):
 class NoiseToImage(Dataset):
     """
     Used for training GAN models, see Goodfellow et al. (https://arxiv.org/abs/1406.2661)
+    Structure of the images should be:
+
+    dataset_path
+      |-- input
+          |-- img001.png
+          |-- img002.png
+          |-- ...
     """
-    def __init__(self):
-        pass
+    def __init__(self, dataset_path: str, input_shape: tuple, transform: Callable = None):
+        self.dataset_path = dataset_path
+        self.input_path = os.path.join(dataset_path, 'input')
+        self.images_list = os.listdir(self.input_path)
+        self.input_shape = input_shape
+
+        self.transform = transform
+
+    def __len__(self):
+        return len(self.images_list)
+
+    def __getitem__(self, idx):
+        image_filename = self.images_list[idx]
+        image = io.imread(os.path.join(self.input_path, image_filename))
+
+        if self.transform:
+            image = self.transform(image)
+        else:
+            image = F.to_tensor(image)
+
+        # generate noise
+        noise = torch.rand(self.input_shape)
+
+        return noise, image, image_filename
+
 
 
 if __name__ == '__main__':
-    pass
+    dataset = NoiseToImage('/home/namazu/Projects/torchkit/examples/data/segmentation', (5, 5), None)
