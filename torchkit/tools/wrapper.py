@@ -180,10 +180,12 @@ class Model:
 class GAN:
     def __init__(self, generator: nn.Module, generator_optimizer,
                  discriminator: nn.Module, discriminator_loss, discriminator_optimizer,
+                 noise_shape: tuple,
                  checkpoint_folder: str,
                  device: torch.device = torch.device('cpu')):
         self.g = generator
         self.g_opt = generator_optimizer
+        self.noise_shape = noise_shape
 
         self.d = discriminator
         self.d_loss = discriminator_loss
@@ -246,8 +248,8 @@ class GAN:
         d_running_real_loss, d_running_fake_loss, g_running_loss = 0, 0, 0
 
         for batch_idx, y_real in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=shuffle)):
-            # generate noise compatible to the data
-            X_noise = Variable(torch.rand(y_real.shape).to(self.device))
+            # generate noise
+            X_noise = Variable(torch.rand(self.noise_shape).to(self.device))
             y_real = Variable(y_real.to(self.device))
 
             # training the discriminator
@@ -293,3 +295,16 @@ class GAN:
             if epoch_idx % save_freq == 0:
                 epoch_save_path = os.path.join(self.checkpoint_folder, '%d' % epoch_idx)
                 self.save_model(epoch_save_path)
+
+    def predict_batch(self, X_batch, cpu=False, numpy=False):
+        self.net.train(False)
+
+        X_batch = Variable(X_batch.to(device=self.device))
+        y_out = self.g(X_batch)
+
+        if numpy or cpu:
+            y_out = self.net(X_batch).cpu()
+            if numpy:
+                y_out = y_out.data.numpy()
+
+        return y_out
