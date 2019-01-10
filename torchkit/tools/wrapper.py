@@ -185,7 +185,11 @@ class GAN:
                  device: torch.device = torch.device('cpu')):
         self.g = g
         self.g_opt = g_opt
-        self.noise_shape = noise_shape
+
+        if isinstance(noise_shape, tuple):
+            self.noise_shape = noise_shape
+        elif isinstance(noise_shape, int):
+            self.noise_shape = (noise_shape, )
 
         self.d = d
         self.d_loss = d_loss
@@ -205,19 +209,25 @@ class GAN:
         torch.save(self.g.state_dict(), os.path.join(save_path, 'g'))
         torch.save(self.d.state_dict(), os.path.join(save_path, 'd'))
 
-    def d_fit_batch(self, X_noise, y_real):
+    def d_fit_batch(self, X_noise, y_real, long_gt: bool = False):
         self.d.train(True)
 
         # zeroing gradients
         self.d_opt.zero_grad()
+
+        # creating real and fake labels
+        d_real_labels = torch.ones(len(y_real)).to(self.device)
+        d_fake_labels = torch.zeros(len(y_real)).to(self.device)
+        if long_gt:
+            d_real_labels = d_real_labels.long()
+            d_fake_labels = d_fake_labels.long()
+
         # real images
         d_real = self.d(y_real)
-        d_real_labels = torch.ones(len(y_real))
         d_real_loss = self.d_loss(d_real, d_real_labels)
         # fake images
         y_fake = self.g(X_noise)
         d_fake = self.d(y_fake)
-        d_fake_labels = torch.zeros(len(y_fake))
         d_fake_loss = self.d_loss(d_fake, d_fake_labels)
         # gradient step
         d_loss = d_real_loss + d_fake_loss
@@ -228,13 +238,19 @@ class GAN:
 
         return d_real_loss.item(), d_fake_loss.item()
 
-    def g_fit_batch(self, X_noise):
+    def g_fit_batch(self, X_noise, long_gt: bool = False):
         self.g.train(True)
 
-        d_real_labels = torch.ones(len(y_real))
-
+        # generating fake images
         self.g_opt.zero_grad()
         y_fake = self.g(X_noise)
+
+        # creating labels for the discriminator
+        d_real_labels = torch.ones(len(X_noise)).to(self.device)
+        if long_gt:
+            d_real_labels = d_real_labels.long()
+
+        # computing loss
         d_fake = self.d(y_fake)
         g_loss = self.d_loss(d_fake, d_real_labels)
         g_loss.backward()
@@ -244,28 +260,28 @@ class GAN:
 
         return g_loss.item()
 
-    def fit_epoch(self, dataset, n_batch=1, shuffle=False):
+    def fit_epoch(self, dataset, n_batch=1, shuffle=False, long_gt: bool = False):
         d_running_real_loss, d_running_fake_loss, g_running_loss = 0, 0, 0
 
-        for batch_idx, y_real in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=shuffle)):
+        for batch_idx, (y_real, *rest) in enumerate(DataLoader(dataset, batch_size=n_batch, shuffle=shuffle)):
             # generate noise
-            X_noise = Variable(torch.rand(self.noise_shape).to(self.device))
+            X_noise = Variable(torch.rand(n_batch, *self.noise_shape).to(self.device))
             y_real = Variable(y_real.to(self.device))
 
             # training the discriminator
-            d_real_loss, d_fake_loss = self.d_fit_batch(X_noise, y_real)
+            d_real_loss, d_fake_loss = self.d_fit_batch(X_noise, y_real, long_gt=long_gt)
             d_running_real_loss += d_real_loss
             d_running_fake_loss += d_fake_loss
 
             # training the generator
-            g_loss = self.g_fit_batch(X_noise)
+            g_loss = self.g_fit_batch(X_noise, long_gt=long_gt)
             g_running_loss += g_loss
 
         return d_running_real_loss/(batch_idx+1), d_running_fake_loss/(batch_idx+1), g_running_loss/(batch_idx+1)
 
     def fit_dataset(self, dataset: Dataset, n_epochs: int, n_batch: int = 1, shuffle: bool = False,
                     save_freq: int = 100, callback: BaseCallback = None,
-                    verbose: bool = False):
+                    long_gt: bool = False, verbose: bool = False):
 
         # setting up callbacks
         if callback is not None:
@@ -281,7 +297,8 @@ class GAN:
 
         for epoch_idx in range(1, n_epochs + 1):
             callback.before_epoch()
-            d_real_loss, d_fake_loss, g_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle)
+            d_real_loss, d_fake_loss, g_loss = self.fit_epoch(dataset, n_batch=n_batch, shuffle=shuffle,
+                                                              long_gt=long_gt)
             callback.after_epoch()
 
             # logging the losses
