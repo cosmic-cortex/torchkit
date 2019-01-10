@@ -178,18 +178,18 @@ class Model:
 
 
 class GAN:
-    def __init__(self, generator: nn.Module, generator_optimizer,
-                 discriminator: nn.Module, discriminator_loss, discriminator_optimizer,
+    def __init__(self, g: nn.Module, g_opt,
+                 d: nn.Module, d_loss, d_opt,
                  noise_shape: tuple,
                  checkpoint_folder: str,
                  device: torch.device = torch.device('cpu')):
-        self.g = generator
-        self.g_opt = generator_optimizer
+        self.g = g
+        self.g_opt = g_opt
         self.noise_shape = noise_shape
 
-        self.d = discriminator
-        self.d_loss = discriminator_loss
-        self.d_opt = discriminator_optimizer
+        self.d = d
+        self.d_loss = d_loss
+        self.d_opt = d_opt
 
         self.checkpoint_folder = checkpoint_folder
         chk_mkdir(self.checkpoint_folder)
