@@ -205,7 +205,7 @@ class GAN:
         self.d_loss.to(device=self.device)
 
     def save_model(self, save_path):
-        chk_mkdir(epoch_save_path)
+        chk_mkdir(save_path)
         torch.save(self.g.state_dict(), os.path.join(save_path, 'g'))
         torch.save(self.d.state_dict(), os.path.join(save_path, 'd'))
 

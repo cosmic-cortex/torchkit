@@ -20,7 +20,7 @@ def to_long_tensor(pic):
 
 class ImageToImageTransform:
     def __init__(self, crop=(256, 256), p_flip=0.5, color_jitter_params=(0.1, 0.1, 0.1, 0.1),
-                 rotate_range=False, normalize=False, long_mask=False):
+                 rotate_range=False, long_mask=False):
         self.crop = crop
         self.p_flip = p_flip
         self.color_jitter_params = color_jitter_params
@@ -56,10 +56,6 @@ class ImageToImageTransform:
             output = F.to_tensor(output)
         else:
             output = to_long_tensor(output)
-
-        # normalizing image
-        if self.normalize:
-            input = tf_normalize(input)
 
         return input, output
 
